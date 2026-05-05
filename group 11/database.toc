@@ -1,0 +1,7 @@
+\beamer@sectionintoc {1}{The NoSQL Landscape}{3}{0}{1}
+\beamer@sectionintoc {2}{Neo4j: The Graph Database}{7}{0}{2}
+\beamer@sectionintoc {3}{Apache Cassandra: The Wide-Column Store}{18}{0}{3}
+\beamer@sectionintoc {4}{Deep Comparison}{31}{0}{4}
+\beamer@sectionintoc {5}{Polyglot Persistence}{40}{0}{5}
+\beamer@sectionintoc {6}{Emerging Trends \& Research Directions}{44}{0}{6}
+\beamer@sectionintoc {7}{Summary \& Conclusions}{47}{0}{7}

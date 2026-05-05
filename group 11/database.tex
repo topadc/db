@@ -1,0 +1,1905 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+
+% =====================================================================
+% THEME & COLORS
+% =====================================================================
+\usetheme{Madrid}
+\usecolortheme{default}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, backgrounds}
+\usepackage{listings}
+% fontawesome5 not used
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ---- Custom Colors ----
+\definecolor{neo4jGreen}{RGB}{0, 142, 81}
+\definecolor{neo4jDark}{RGB}{0, 80, 50}
+\definecolor{cassBlue}{RGB}{20, 100, 200}
+\definecolor{cassDark}{RGB}{10, 50, 120}
+\definecolor{accentOrange}{RGB}{230, 100, 20}
+\definecolor{lightGray}{RGB}{245, 245, 245}
+\definecolor{codeBackground}{RGB}{30, 30, 30}
+\definecolor{codeGreen}{RGB}{80, 200, 120}
+\definecolor{codeYellow}{RGB}{255, 220, 80}
+\definecolor{codePurple}{RGB}{180, 120, 255}
+
+% ---- Beamer color overrides ----
+\setbeamercolor{structure}{fg=neo4jDark}
+\setbeamercolor{frametitle}{bg=neo4jDark, fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=neo4jGreen!60!white}
+\setbeamercolor{block title}{bg=neo4jDark, fg=white}
+\setbeamercolor{block body}{bg=lightGray}
+\setbeamercolor{alerted text}{fg=accentOrange}
+\setbeamercolor{example text}{fg=neo4jGreen}
+
+% ---- Custom tcolorbox styles ----
+\tcbset{
+  neo4jbox/.style={
+    colback=neo4jGreen!8!white,
+    colframe=neo4jGreen!70!black,
+    fonttitle=\bfseries\small,
+    sharp corners=south,
+    boxrule=0.8pt,
+    left=4pt, right=4pt, top=3pt, bottom=3pt,
+  },
+  cassbox/.style={
+    colback=cassBlue!8!white,
+    colframe=cassBlue!70!black,
+    fonttitle=\bfseries\small,
+    sharp corners=south,
+    boxrule=0.8pt,
+    left=4pt, right=4pt, top=3pt, bottom=3pt,
+  },
+  deepdivebox/.style={
+    colback=accentOrange!8!white,
+    colframe=accentOrange!80!black,
+    fonttitle=\bfseries\small,
+    sharp corners,
+    boxrule=0.8pt,
+    left=4pt, right=4pt, top=3pt, bottom=3pt,
+  },
+  infobox/.style={
+    colback=gray!10!white,
+    colframe=gray!60!black,
+    fonttitle=\bfseries\small,
+    sharp corners,
+    boxrule=0.6pt,
+    left=4pt, right=4pt, top=3pt, bottom=3pt,
+  }
+}
+
+% ---- Code listing style ----
+\lstdefinestyle{cypher}{
+  language=SQL,
+  backgroundcolor=\color{codeBackground},
+  basicstyle=\ttfamily\scriptsize\color{white},
+  keywordstyle=\color{codeYellow}\bfseries,
+  commentstyle=\color{gray!60},
+  stringstyle=\color{codeGreen},
+  breaklines=true,
+  frame=none,
+  xleftmargin=4pt,
+  xrightmargin=4pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+  morekeywords={MATCH, RETURN, WHERE, CREATE, DELETE, MERGE, SET, WITH,
+                ORDER, BY, LIMIT, OPTIONAL, CALL, YIELD, UNWIND, AS,
+                DESC, ASC, NOT, AND, OR, IN, STARTS, ENDS, CONTAINS,
+                ALL, ANY, NONE, SINGLE, EXISTS, CASE, WHEN, THEN, ELSE,
+                END, FOREACH, ON, DETACH, SKIP, UNION, DISTINCT, IS,
+                NULL, TRUE, FALSE, count, sum, avg, min, max, collect,
+                shortestPath, allShortestPaths},
+}
+
+\lstdefinestyle{cql}{
+  language=SQL,
+  backgroundcolor=\color{codeBackground},
+  basicstyle=\ttfamily\scriptsize\color{white},
+  keywordstyle=\color{codePurple}\bfseries,
+  commentstyle=\color{gray!60},
+  stringstyle=\color{codeGreen},
+  breaklines=true,
+  frame=none,
+  xleftmargin=4pt,
+  xrightmargin=4pt,
+  aboveskip=2pt,
+  belowskip=2pt,
+  morekeywords={CREATE, TABLE, KEYSPACE, USE, INSERT, INTO, VALUES,
+                SELECT, FROM, WHERE, PRIMARY, KEY, WITH, AND, OR,
+                REPLICATION, DURABLE, WRITES, CLUSTERING, ORDER,
+                IF, NOT, EXISTS, ALTER, DROP, TRUNCATE, USING,
+                TTL, TIMESTAMP, LIMIT, ALLOW, FILTERING, BATCH,
+                BEGIN, APPLY, ON, SET, UPDATE, DELETE, uuid, timeuuid,
+                text, int, bigint, boolean, float, double, blob,
+                list, set, map, frozen, counter, inet, timestamp,
+                QUORUM, ONE, ALL, LOCAL_QUORUM, EACH_QUORUM},
+}
+
+% =====================================================================
+% META
+% =====================================================================
+\title{Neo4j \& Apache Cassandra}
+\subtitle{An Academic Deep Dive:\\Graph Databases vs.\ Wide-Column Stores}
+\author{L\^{a}m Kh\'{a}nh Tr\`{i}nh}
+\institute{Ho Chi Minh City University of Technology (HCMUT)\\
+           Faculty of Computer Science \& Engineering}
+\date{\today}
+
+% =====================================================================
+% DOCUMENT
+% =====================================================================
+\begin{document}
+
+% ------------------------------------------------------------------
+% TITLE
+% ------------------------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ------------------------------------------------------------------
+% TABLE OF CONTENTS
+% ------------------------------------------------------------------
+\begin{frame}{Table of Contents}
+  \tableofcontents[hideallsubsections]
+\end{frame}
+
+% ==================================================================
+% SECTION 1: THE NOSQL LANDSCAPE
+% ==================================================================
+\section{The NoSQL Landscape}
+
+\begin{frame}{The Rise of NoSQL: Historical Context}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \textbf{The Relational Era (1970s -- 2000s)}
+      \begin{itemize}\small
+        \item Edgar Codd's relational model dominated for decades
+        \item SQL databases: strong consistency, rigid schemas, vertical scaling
+        \item The Web 2.0 explosion shattered their assumptions:
+        \begin{itemize}\scriptsize
+          \item Billions of users generating semi-structured data at high velocity
+          \item Social graphs, time-series logs, documents — all ill-fitting
+          \item Cost of vertical scaling became prohibitive
+        \end{itemize}
+      \end{itemize}
+      \vspace{0.3cm}
+      \textbf{The NoSQL Response (2004 -- present)}
+      \begin{itemize}\small
+        \item Google Bigtable (2004), Amazon Dynamo (2007) papers ignited the movement
+        \item ``Not Only SQL'' — horizontal scale, flexible schemas, specialized data models
+        \item Key design insight: \textit{different problems need different storage engines}
+      \end{itemize}
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[infobox, title=Four NoSQL Families]
+        \scriptsize
+        \begin{tabular}{@{}ll@{}}
+          \textbf{Key-Value} & Redis, DynamoDB \\[2pt]
+          \textbf{Document} & MongoDB, CouchDB \\[2pt]
+          \textbf{Wide-Column} & \textcolor{cassBlue}{\textbf{Cassandra}}, HBase \\[2pt]
+          \textbf{Graph} & \textcolor{neo4jGreen}{\textbf{Neo4j}}, JanusGraph \\
+        \end{tabular}
+        \vspace{0.2cm}
+        \hrule
+        \vspace{0.2cm}
+        Each family excels at a specific \textit{access pattern}. Choosing wrong leads to fundamental architectural pain.
+      \end{tcolorbox}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{CAP Theorem: The Fundamental Trade-off}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[infobox, title={CAP Theorem (Brewer, 2000)}]
+        \scriptsize
+        A distributed system can guarantee \textbf{at most two} of the three:
+        \vspace{0.2cm}
+        \begin{itemize}
+          \item[\textbf{C}] \textbf{Consistency} — every read receives the most recent write or an error
+          \item[\textbf{A}] \textbf{Availability} — every request receives a (possibly stale) response
+          \item[\textbf{P}] \textbf{Partition Tolerance} — system continues despite network partitions
+        \end{itemize}
+        \vspace{0.2cm}
+        \textit{In practice, P is mandatory for any distributed system. The real choice is C vs.\ A during a partition.}
+      \end{tcolorbox}
+      \vspace{0.3cm}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j Positioning: CA / CP]
+        \scriptsize
+        Prioritizes \textbf{Consistency}. Causal Clustering uses the Raft consensus protocol to guarantee that all writes are committed to a majority of Core Servers before acknowledging success.
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra Positioning: AP]
+        \scriptsize
+        Prioritizes \textbf{Availability} and \textbf{Partition Tolerance}. Accepts \textit{Eventual Consistency} by default. During a network partition, Cassandra prefers to serve potentially stale data rather than refuse the request.
+        \vspace{0.2cm}
+        The key innovation: \textbf{Tunable Consistency} allows operators to dial the CP/AP balance per query using consistency levels (ONE, QUORUM, ALL).
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: PACELC Extension}]
+        \scriptsize
+        The PACELC model (Abadi, 2012) refines CAP: \textit{even without} a partition, systems trade off \textbf{Latency} vs.\ \textbf{Consistency}. Cassandra is PA/EL (prioritize availability + low latency); Neo4j is PC/EC (prioritize consistency).
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{ACID vs.\ BASE: Competing Consistency Philosophies}
+  \begin{columns}[T]
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=ACID (Neo4j)]
+        \small
+        \begin{itemize}
+          \item \textbf{Atomicity} — transaction is all-or-nothing
+          \item \textbf{Consistency} — data always moves from valid state to valid state
+          \item \textbf{Isolation} — concurrent transactions do not interfere
+          \item \textbf{Durability} — committed data survives failures
+        \end{itemize}
+        \vspace{0.2cm}
+        \scriptsize Neo4j enforces full ACID on every graph transaction, including multi-hop relationship writes.
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[cassbox, title=BASE (Cassandra)]
+        \small
+        \begin{itemize}
+          \item \textbf{Basically Available} — system is always responsive
+          \item \textbf{Soft state} — state may change over time without input
+          \item \textbf{Eventually consistent} — all replicas converge to same value \textit{eventually}
+        \end{itemize}
+        \vspace{0.2cm}
+        \scriptsize Cassandra introduced \textit{Lightweight Transactions} (Paxos-based) for conditional writes when strict ordering is required, but at significant performance cost.
+      \end{tcolorbox}
+  \end{columns}
+  \vspace{0.4cm}
+  \begin{tcolorbox}[infobox, title=Key Insight]
+    \small
+    Neither philosophy is universally superior. ACID is essential for financial transactions; BASE enables global-scale write throughput. The art is \textbf{choosing the right model for the problem}.
+  \end{tcolorbox}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Data Models: A Taxonomy}
+  \small
+  \begin{center}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{>{\bfseries}p{2.8cm} p{3.8cm} p{4.0cm}}
+      \toprule
+      \textbf{Dimension} & \textbf{Graph (Neo4j)} & \textbf{Wide-Column (Cassandra)} \\
+      \midrule
+      Core abstraction & Nodes \& typed Relationships & Rows with dynamic column families \\
+      Schema & Flexible (schema-optional) & Per-table schema, strictly enforced \\
+      Primary query & Pattern matching, traversal & Partition key lookup \\
+      Joins & Native, $O(1)$ per hop & Forbidden (application-side only) \\
+      Relationships & First-class citizens & Encoded as denormalized columns \\
+      Ordering & Graph topology & Clustering column defines disk order \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+\end{frame}
+
+% ==================================================================
+% SECTION 2: NEO4J — GRAPH DATABASE
+% ==================================================================
+\section{Neo4j: The Graph Database}
+
+\begin{frame}{Neo4j: History \& Origins}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+      \begin{itemize}\small
+        \item Founded in \textbf{2007} by Emil Eifrem, Johan Svensson, and Peter Neubauer in Malmö, Sweden — initially as a backend for a content management system
+        \item Open-sourced under GPLv3 in 2010; community edition remains free
+        \item Introduced the \textbf{Cypher query language} (2011), later donated to the openCypher project (2015) for cross-vendor standardization
+        \item Version \textbf{4.x} introduced multi-database and Fabric sharding; \textbf{5.x} unified clustering under the Raft-based Causal Clustering model
+        \item Currently the \textbf{\#1 ranked graph database} on DB-Engines and the de-facto standard for property graph systems
+      \end{itemize}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Key Milestones]
+        \scriptsize
+        \begin{tabular}{@{}rl@{}}
+          \textbf{2007} & Company founded \\
+          \textbf{2010} & First stable release \\
+          \textbf{2011} & Cypher language introduced \\
+          \textbf{2013} & Enterprise clustering \\
+          \textbf{2015} & openCypher project \\
+          \textbf{2017} & Causal Clustering (Raft) \\
+          \textbf{2020} & Neo4j 4.0 (multi-DB) \\
+          \textbf{2022} & AuraDB (managed cloud) \\
+          \textbf{2023} & Neo4j 5.x (unified arch.) \\
+        \end{tabular}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{The Property Graph Model}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Four primitive elements:}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[neo4jbox, title=1. Nodes (Vertices)]
+        \scriptsize
+        Represent \textbf{entities} (nouns). Can carry one or more \textit{Labels} (e.g., \texttt{:Student}, \texttt{:Course}) and arbitrary key-value \textit{Properties} (e.g., \texttt{name: "Trinh"}, \texttt{gpa: 3.8}).
+      \end{tcolorbox}
+      \begin{tcolorbox}[neo4jbox, title=2. Relationships (Edges)]
+        \scriptsize
+        Represent \textbf{connections} (verbs). Always \textit{directed} (but can be traversed both ways). Have exactly one \textit{Type} (e.g., \texttt{:ENROLLED\_IN}) and can also carry \textit{Properties} (e.g., \texttt{since: 2023}).
+      \end{tcolorbox}
+      \begin{tcolorbox}[neo4jbox, title=3. Labels \& 4. Properties]
+        \scriptsize
+        \textbf{Labels}: categorization mechanism; one node can have many labels. \textbf{Properties}: schema-optional key-value pairs stored directly on nodes/edges — no separate tables needed.
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[infobox, title=Why Graph Matters for Relationships]
+        \scriptsize
+        In a relational database, representing:
+        \begin{center}\texttt{Alice $\to$ FRIEND\_WITH $\to$ Bob}\end{center}
+        requires a \texttt{friendships} JOIN table and an expensive index scan. Adding a \textit{property} to that friendship (e.g., \texttt{since: 2020}) requires altering the JOIN table. 
+        \vspace{0.2cm}
+        In Neo4j, relationships are first-class objects stored with their own properties. The relationship record directly embeds pointers to both endpoint nodes — no index needed.
+      \end{tcolorbox}
+      \vspace{0.3cm}
+      \begin{alertblock}{Key Differentiator}
+        \small Relationships in Neo4j are \textbf{not derived at query time}. They are \textit{pre-materialized on disk}, making multi-hop traversals independent of total data set size.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Index-Free Adjacency: Neo4j's Performance Secret}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{How traditional databases join:}
+      \begin{itemize}\small
+        \item SQL uses \textbf{B-Tree indexes} over foreign key columns
+        \item To resolve a JOIN: hash/merge probe on the index — $O(\log N)$ per lookup
+        \item Each additional hop in a multi-join query multiplies cost
+        \item For a 6-hop social graph traversal on 1 billion nodes: \textbf{infeasible}
+      \end{itemize}
+      \vspace{0.3cm}
+      \textbf{How Neo4j traverses:}
+      \begin{itemize}\small
+        \item Each node record contains a \textbf{physical pointer} to its first relationship record
+        \item Each relationship record contains pointers to: the start node, end node, and the \textit{next relationship} of each node (a doubly-linked list)
+        \item Traversal = \textbf{pointer chasing} — $O(1)$ per hop regardless of graph size
+      \end{itemize}
+    \column{0.45\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Storage Record Layout}]
+        \scriptsize
+        Node record (15 bytes):
+        \vspace{0.1cm}\\
+        \texttt{[inUse|nextRelId|nextPropId|labels]}
+        \vspace{0.2cm}\\
+        Relationship record (34 bytes):
+        \vspace{0.1cm}\\
+        \texttt{[inUse|firstNode|secondNode|}\\
+        \texttt{ relType|firstPrevRelId|}\\
+        \texttt{ firstNextRelId|secondPrevRelId|}\\
+        \texttt{ secondNextRelId|nextPropId]}
+        \vspace{0.2cm}\\
+        Fixed-size records enable \textbf{direct byte-offset addressing}: finding record \#N is simply a seek to byte $N \times 15$ — no heap scan, no index lookup.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[neo4jbox]
+        \scriptsize
+        \textbf{Complexity comparison for a $k$-hop query:}
+        \begin{center}
+          SQL: $O(k \cdot \log N)$ \\
+          Neo4j: $O(k \cdot d)$
+        \end{center}
+        where $d$ = average degree (usually small). Total graph size $N$ \textit{does not appear}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Neo4j Architecture: Deployment Modes}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Single Instance]
+        \scriptsize
+        Full ACID. Reads and writes on same machine. Suitable for development, analytics workloads, or small production deployments with low HA requirements.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[neo4jbox, title=Causal Clustering (HA)]
+        \scriptsize
+        \textbf{Core Servers} (typically 3 or 5): participate in Raft consensus. All writes go through Raft leader; a majority must acknowledge before commit.
+        \vspace{0.1cm}\\
+        \textbf{Read Replicas}: asynchronously replicate from Core Servers; serve read queries; can lag behind by a small delta.
+        \vspace{0.1cm}\\
+        \textbf{Causal Consistency}: a client receives a \textit{bookmark} after a write; subsequent reads present that bookmark to guarantee they see at least that write.
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Raft Consensus in Neo4j}]
+        \scriptsize
+        Raft ensures that at most one leader exists per term:
+        \begin{enumerate}
+          \item Leader receives a write transaction
+          \item Appends to its local log and broadcasts to followers
+          \item Transaction is committed once a \textbf{quorum} ($\lfloor n/2 \rfloor + 1$) acknowledges
+          \item Leader responds to client; followers apply asynchronously
+        \end{enumerate}
+        Failure scenario: if the leader fails, followers elect a new one via randomized timeouts. No data is lost if a majority survived.
+        \vspace{0.1cm}\\
+        With 3 Core Servers: tolerates \textbf{1 failure}.\\
+        With 5 Core Servers: tolerates \textbf{2 failures}.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[infobox, title=Neo4j Fabric (Sharding)]
+        \scriptsize
+        For extremely large graphs: Neo4j Fabric routes subgraph queries to \textit{shards} (separate Neo4j instances), combining results in a federated query layer. Each shard maintains its own Raft cluster.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Neo4j Storage Engine \& Transaction Lifecycle}
+  \small
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Storage layers:}
+      \begin{enumerate}\small
+        \item \textbf{Transaction Log} — every write is first appended to the WAL (Write-Ahead Log) for durability, analogous to PostgreSQL's WAL
+        \item \textbf{Node/Relationship/Property Stores} — fixed-size record files on disk (mmap'd into memory for fast access)
+        \item \textbf{Label Index Store} — allows efficient lookup of all nodes with a given label
+        \item \textbf{Schema Indexes} — B-Tree, Full-Text (Lucene), or Point indexes over node/relationship properties
+        \item \textbf{Page Cache} — configurable in-memory cache of store pages; the primary performance lever
+      \end{enumerate}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: MVCC \& Locking}]
+        \scriptsize
+        Neo4j uses a \textbf{pessimistic locking} model (not MVCC like PostgreSQL):
+        \begin{itemize}
+          \item Shared locks on \textit{read} operations
+          \item Exclusive locks on \textit{write} operations (node/relationship/property records)
+          \item Deadlock detection via cycle-detection in the lock manager wait graph
+          \item Phantom reads are prevented by \textit{label scan locks}
+        \end{itemize}
+        \vspace{0.1cm}
+        Implication: high-concurrency write workloads on the \textit{same} nodes/relationships can produce lock contention. Design the data model to minimize hot nodes.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{alertblock}{Performance Tuning}
+        \scriptsize Set \texttt{dbms.memory.pagecache.size} to fit your full store in RAM. Traversals that stay in the page cache are \textit{orders of magnitude} faster than those requiring disk I/O.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Cypher Query Language: Design Philosophy}
+  \begin{columns}[T]
+    \column{0.53\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=ASCII-Art Syntax]
+        \scriptsize
+        Cypher's defining insight: \textbf{graph patterns look like drawings}.
+        \vspace{0.2cm}
+        \begin{itemize}
+          \item \texttt{(n)} — a node variable \texttt{n}
+          \item \texttt{(n:Label)} — node with a label
+          \item \texttt{(n \{prop: val\})} — node with a property filter
+          \item \texttt{-[:TYPE]->} — directed relationship
+          \item \texttt{-[:TYPE*1..3]->} — variable-length path (1 to 3 hops)
+          \item \texttt{(a)--(b)} — undirected relationship
+        \end{itemize}
+        \vspace{0.2cm}
+        These compose into \textbf{path patterns} that read like sentences:\\
+        \texttt{(alice)-[:FRIEND]->(bob)-[:WORKS\_AT]->(acme)}
+      \end{tcolorbox}
+    \column{0.44\textwidth}
+      \begin{tcolorbox}[infobox, title=Core Cypher Clauses]
+        \scriptsize
+        \begin{tabular}{@{}ll@{}}
+          \texttt{MATCH} & Pattern search \\
+          \texttt{OPTIONAL MATCH} & Left outer join \\
+          \texttt{WHERE} & Predicate filtering \\
+          \texttt{RETURN} & Project output \\
+          \texttt{CREATE} & Insert nodes/rels \\
+          \texttt{MERGE} & Upsert \\
+          \texttt{SET / REMOVE} & Update properties \\
+          \texttt{DELETE / DETACH} & Remove data \\
+          \texttt{WITH} & Pipeline stages \\
+          \texttt{UNWIND} & Flatten lists \\
+          \texttt{CALL} & Invoke procedures \\
+          \texttt{FOREACH} & Iterate side-effects \\
+        \end{tabular}
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[deepdivebox, title=openCypher Standard]
+        \scriptsize
+        Since 2015, Cypher's specification is maintained by the openCypher community. GQL (ISO/IEC 39075, ratified 2024) standardizes graph query languages, heavily influenced by Cypher.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}[fragile]{Cypher: CRUD Operations}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Create nodes and relationships:}
+      \begin{lstlisting}[style=cypher]
+// Create two students and a course
+CREATE (t:Student {id: "SV001", name: "Trinh",
+                   gpa: 3.8, faculty: "CS"})
+CREATE (k:Student {id: "SV002", name: "Khoa",
+                   gpa: 3.5, faculty: "CS"})
+CREATE (c:Course  {code: "CO3021",
+                   name: "Database Systems"})
+
+// Create typed, property-bearing relationship
+CREATE (t)-[:STUDIES_WITH {since: 2022,
+            project: "NoSQL Research"}]->(k)
+CREATE (t)-[:ENROLLED_IN {semester: "HK2"}]->(c)
+CREATE (k)-[:ENROLLED_IN {semester: "HK2"}]->(c)
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \textbf{Merge (upsert):}
+      \begin{lstlisting}[style=cypher]
+// Create only if does not exist
+MERGE (p:Professor {id: "GV001"})
+ON CREATE SET p.name = "Dr. Nguyen",
+              p.created = timestamp()
+ON MATCH  SET p.lastSeen = timestamp()
+      \end{lstlisting}
+    \column{0.47\textwidth}
+      \textbf{Update and delete:}
+      \begin{lstlisting}[style=cypher]
+// Update a property
+MATCH (s:Student {id: "SV001"})
+SET s.gpa = 3.9, s.honors = true
+
+// Remove a property
+MATCH (s:Student {id: "SV001"})
+REMOVE s.honors
+
+// Delete a node and all its relationships
+MATCH (s:Student {id: "SV002"})
+DETACH DELETE s
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[neo4jbox, title=MERGE Semantics]
+        \scriptsize
+        \texttt{MERGE} is Neo4j's upsert: it matches the full pattern, and if no match exists, creates it atomically. Essential for idempotent data loading pipelines.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}[fragile]{Cypher: Advanced Pattern Matching}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Variable-length path traversal:}
+      \begin{lstlisting}[style=cypher]
+// Friends within 3 hops of Trinh
+// who share the same faculty
+MATCH (me:Student {name: "Trinh"})
+MATCH (me)-[:FRIEND*1..3]-(network:Student)
+WHERE network.faculty = me.faculty
+  AND network <> me
+RETURN network.name,
+       length(shortestPath(
+         (me)-[:FRIEND*]-(network)
+       )) AS hops
+ORDER BY hops ASC
+LIMIT 10
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \textbf{Aggregation and collection:}
+      \begin{lstlisting}[style=cypher]
+// Top courses by enrollment within network
+MATCH (me:Student {name: "Trinh"})
+MATCH (me)-[:FRIEND*1..2]-(peer:Student)
+MATCH (peer)-[:ENROLLED_IN]->(c:Course)
+RETURN c.name,
+       count(DISTINCT peer) AS students,
+       collect(DISTINCT peer.name) AS names
+ORDER BY students DESC LIMIT 5
+      \end{lstlisting}
+    \column{0.47\textwidth}
+      \textbf{Shortest path algorithms:}
+      \begin{lstlisting}[style=cypher]
+// Shortest friendship path between
+// two students
+MATCH (a:Student {id: "SV001"}),
+      (b:Student {id: "SV099"})
+MATCH p = shortestPath(
+  (a)-[:FRIEND*]-(b)
+)
+RETURN [n IN nodes(p) | n.name]
+         AS path,
+       length(p) AS degrees
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Query Planning}]
+        \scriptsize
+        Cypher queries are compiled by the \textbf{Cypher Planner} into a physical execution plan (observable via \texttt{EXPLAIN} / \texttt{PROFILE}). The planner uses statistics (node/relationship counts) and index availability to choose between:\\
+        \textbf{NodeIndexScan}, \textbf{NodeByLabelScan}, \textbf{Expand}, \textbf{ShortestPath}, \textbf{NodeHashJoin}, etc.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}[fragile]{Cypher: Graph Algorithms \& APOC}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Neo4j Graph Data Science (GDS) library:}
+      \begin{lstlisting}[style=cypher]
+// Project an in-memory graph
+CALL gds.graph.project(
+  'social-graph',
+  'Student',
+  'FRIEND'
+)
+
+// Run PageRank to find influence
+CALL gds.pageRank.stream('social-graph')
+YIELD nodeId, score
+RETURN gds.util.asNode(nodeId).name AS name,
+       score
+ORDER BY score DESC LIMIT 10
+      \end{lstlisting}
+      \begin{lstlisting}[style=cypher]
+// Community detection (Louvain)
+CALL gds.louvain.stream('social-graph')
+YIELD nodeId, communityId
+RETURN communityId,
+       count(*) AS members
+ORDER BY members DESC
+      \end{lstlisting}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=GDS Algorithm Categories]
+        \scriptsize
+        \begin{tabular}{@{}ll@{}}
+          \textbf{Centrality} & PageRank, Betweenness \\
+          \textbf{Community} & Louvain, LPA, WCC \\
+          \textbf{Path} & Dijkstra, A*, Yen's k-shortest \\
+          \textbf{Similarity} & Node2Vec, cosine, Jaccard \\
+          \textbf{Link Prediction} & Adamic-Adar, Common Neighbors \\
+          \textbf{Embeddings} & FastRP, GraphSAGE \\
+        \end{tabular}
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[infobox, title=APOC (Awesome Procedures on Cypher)]
+        \scriptsize
+        APOC provides 450+ utility procedures for:
+        \begin{itemize}
+          \item Data import (CSV, JSON, GraphQL)
+          \item Dynamic Cypher execution
+          \item Date/time manipulation
+          \item Graph refactoring
+          \item Batch processing with \texttt{apoc.periodic.iterate}
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Neo4j Indexing Strategies}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \small
+      \textbf{Schema Indexes} (on node properties):
+      \begin{itemize}\scriptsize
+        \item \textbf{B-Tree Index} — range queries, equality, ORDER BY. Default for most property types.
+        \item \textbf{Full-Text Index} — powered by Apache Lucene; supports \texttt{CONTAINS}, fuzzy matching, relevance scoring. Ideal for search on string properties.
+        \item \textbf{Point Index} — spatial data types; supports distance and bounding-box queries.
+        \item \textbf{Composite Index} — across multiple properties; used when WHERE filters multiple fields simultaneously.
+        \item \textbf{Token Lookup Index} — auto-created; enables fast \texttt{NodeByLabelScan}.
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Relationship indexes:} from Neo4j 4.3+, indexes can be created on relationship properties as well.
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Index vs.\ Index-Free Adjacency}]
+        \scriptsize
+        It is important to understand when each mechanism fires:
+        \vspace{0.1cm}
+        \begin{itemize}
+          \item \textbf{Schema indexes} are used as \textit{entry points} — to find the first node(s) in a query (e.g., \texttt{MATCH (s:Student \{id:"SV001"\})})
+          \item Once the entry node is found, all subsequent \texttt{-[:REL]->} traversals use \textbf{index-free adjacency} (pointer following)
+        \end{itemize}
+        \vspace{0.1cm}
+        This hybrid design combines the best of both worlds: fast property lookup via B-Tree + fast graph traversal via physical pointers.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{alertblock}{Index Hint}
+        \scriptsize Use \texttt{USING INDEX s:Student(id)} in Cypher to force the planner to use a specific index when the auto-selected plan is suboptimal.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Neo4j Use Cases \& Anti-Patterns}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[neo4jbox, title={[OK] Ideal Use Cases}]
+        \small
+        \begin{itemize}
+          \item \textbf{Fraud ring detection} — identifying circular transaction patterns that look legitimate individually but form suspicious rings when traversed as a graph
+          \item \textbf{Real-time recommendations} — ``People who viewed X also viewed Y'' traversed in real time across social and purchase graphs
+          \item \textbf{Knowledge graphs} — connecting entities across multiple domains (research, enterprise ontologies, semantic web)
+          \item \textbf{Access control} — evaluating complex permission inheritance hierarchies (RBAC, ABAC)
+          \item \textbf{Network/IT topology} — impact analysis of infrastructure failures through dependency graphs
+          \item \textbf{Master Data Management} — relating products, suppliers, regulations across enterprise silos
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={[!] Anti-Patterns}]
+        \small
+        \begin{itemize}
+          \item \textbf{Bulk data logging} — massive flat record ingestion (metrics, events, access logs) where no relationship traversal occurs; Cassandra or ClickHouse is far better
+          \item \textbf{Simple key-value lookups} — adding graph overhead to what is fundamentally a dictionary lookup
+          \item \textbf{High-cardinality, schema-rigid data} — if data is perfectly tabular and queries never need joins, a relational database or columnar store outperforms
+          \item \textbf{Supernode problem} — nodes with millions of relationships (e.g., a ``celebrity'' node) degrade traversal performance; requires \textit{relationship type} partitioning strategies
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ==================================================================
+% SECTION 3: CASSANDRA — WIDE-COLUMN STORE
+% ==================================================================
+\section{Apache Cassandra: The Wide-Column Store}
+
+\begin{frame}{Cassandra: History \& Origins}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+      \begin{itemize}\small
+        \item Originally developed by \textbf{Facebook} (2007--2008) to power the Inbox Search feature — required handling billions of messages with no downtime
+        \item Open-sourced and donated to the \textbf{Apache Software Foundation} in 2009; graduated to Top-Level Project in 2010
+        \item Architectural DNA: combines \textbf{Amazon Dynamo's} distributed hash ring (for availability) with \textbf{Google Bigtable's} data model (for structured storage)
+        \item Major adopters include Netflix (replicas across 3 AWS regions), Apple ($>$75,000 nodes), Discord, Uber, and Instagram
+        \item \textbf{DataStax Enterprise (DSE)} is the commercial distribution with enterprise add-ons; Astra DB is the managed cloud offering
+      \end{itemize}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[cassbox, title=Key Milestones]
+        \scriptsize
+        \begin{tabular}{@{}rl@{}}
+          \textbf{2007} & Created at Facebook \\
+          \textbf{2008} & Deployed for Inbox Search \\
+          \textbf{2009} & Open-sourced (Apache) \\
+          \textbf{2010} & Apache TLP graduation \\
+          \textbf{2012} & CQL 3.0 released \\
+          \textbf{2014} & Lightweight Transactions \\
+          \textbf{2016} & SASI indexing \\
+          \textbf{2020} & Cassandra 4.0 (audit log) \\
+          \textbf{2022} & Cassandra 4.1 (pluggable) \\
+        \end{tabular}
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[deepdivebox, title=Scale Fact]
+        \scriptsize
+        Apple runs Cassandra on over \textbf{75,000 nodes}, storing more than \textbf{10 petabytes} of data — the largest known Cassandra deployment.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{The Wide-Column Data Model}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \small
+      \textbf{Conceptual hierarchy:}
+      \begin{itemize}
+        \item \textbf{Keyspace} — top-level container (like a relational database); defines replication strategy
+        \item \textbf{Table} — collection of rows; each table has a declared schema
+        \item \textbf{Row} — uniquely identified by its \textit{primary key}; can have different non-null columns per row (wide columns)
+        \item \textbf{Primary Key anatomy:}
+          \begin{itemize}\scriptsize
+            \item \textbf{Partition Key} — determines which node(s) own this row via consistent hashing
+            \item \textbf{Clustering Columns} — determine the sorted order of rows \textit{within} a partition on disk
+            \item \textbf{Regular Columns} — the data payload
+          \end{itemize}
+      \end{itemize}
+    \column{0.45\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: ``Wide Column'' Explained}]
+        \scriptsize
+        The term refers to Bigtable's original model where each row can have \textit{millions of columns} — not the same as a relational table. In Cassandra, this manifests as clustering columns that create a sorted, sparse matrix structure within each partition.
+        \vspace{0.2cm}\\
+        A single Cassandra partition can hold up to \textbf{2 billion cells} (column values), making it ideal for time-series data where each event becomes a new row within the same partition.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[infobox, title=Important Constraint]
+        \scriptsize
+        Cassandra does \textbf{not} support:
+        \begin{itemize}
+          \item JOINs between tables
+          \item Subqueries
+          \item Arbitrary \texttt{WHERE} clauses (must use partition key)
+          \item Aggregations across partitions (without ALLOW FILTERING, which is dangerous)
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Cassandra: The Masterless Ring Architecture}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Core architectural principles:}
+      \begin{itemize}\small
+        \item \textbf{Peer-to-peer (P2P)} — no master node; every node is functionally identical
+        \item \textbf{Consistent Hashing} — the partition key is hashed to a 64-bit token; the ring is divided into token ranges, each owned by a node
+        \item \textbf{Replication Factor (RF)} — each partition is replicated on RF nodes for fault tolerance; typically RF=3
+        \item \textbf{Coordinator} — any node can accept client requests and acts as coordinator for that request, routing sub-requests to the correct replicas
+        \item \textbf{Virtual Nodes (vnodes)} — each physical node owns multiple token ranges (default 256), enabling automatic data balancing as nodes join/leave
+      \end{itemize}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Consistent Hashing}]
+        \scriptsize
+        \textbf{Problem solved}: with naïve modular hashing (\texttt{key \% N}), adding/removing one node \textit{N} invalidates $\approx N/(N+1)$ of all keys.
+        \vspace{0.1cm}\\
+        \textbf{Solution}: map both nodes and keys onto a fixed-size ring. When a node is added, it only takes responsibility for a \textit{portion} of its neighbor's range. On average, only \texttt{K/N} keys are remapped (where K = total keys, N = nodes).
+        \vspace{0.1cm}\\
+        Virtual nodes extend this: each physical node's load can be tuned by assigning it more/fewer vnodes without moving data.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{alertblock}{Zero Single Point of Failure}
+        \scriptsize Because any node can coordinate any request, Cassandra has \textbf{no master to fail}. Rolling upgrades, node additions, and decommissions are all done without downtime.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Gossip Protocol \& Failure Detection}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \textbf{Gossip protocol mechanics:}
+      \begin{itemize}\small
+        \item Each node periodically (every 1 second) selects 1--3 random peers and exchanges \textbf{state information} (token ownership, load, schema version, generation counter)
+        \item Messages contain not only direct knowledge but also \textit{known knowledge about other nodes} — rumors spread virally
+        \item Convergence time: $O(\log N)$ rounds for full cluster awareness
+        \item No central directory needed — each node builds a complete cluster view
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Failure detection ($\Phi$ Accrual):}
+      \begin{itemize}\small
+        \item Cassandra does \textit{not} use binary alive/dead state
+        \item Computes a continuous suspicion level $\Phi$ based on recent heartbeat history
+        \item As $\Phi$ rises above threshold (default $\Phi = 8$), the node is considered unreachable
+      \end{itemize}
+    \column{0.45\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: $\Phi$ Accrual Detector}]
+        \scriptsize
+        The $\Phi$ value is computed from inter-arrival times of heartbeat messages:
+        \[\Phi(t) = -\log_{10}\big(1 - F(t - t_{\text{last}})\big)\]
+        where $F$ is the CDF of historical arrival intervals (modeled as a Gaussian distribution). As the gap between expected and actual heartbeat grows, $\Phi$ increases toward infinity.
+        \vspace{0.1cm}\\
+        This adaptive model avoids false positives in high-latency networks (e.g., cross-datacenter links) by adjusting the threshold automatically based on network conditions.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[cassbox]
+        \scriptsize
+        \textbf{Key benefit}: Gossip + $\Phi$ detection enables Cassandra to heal gracefully from transient network blips without marking nodes as permanently failed.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Replication Strategies in Cassandra}
+  \small
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[cassbox, title=SimpleStrategy]
+        \scriptsize
+        Places replicas on the next $RF-1$ nodes clockwise on the ring, regardless of rack or datacenter. \textbf{Use only for single-datacenter deployments or development}.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[cassbox, title=NetworkTopologyStrategy (Production)]
+        \scriptsize
+        Specifies per-datacenter replication factors. Distributes replicas across different racks within each datacenter for maximum fault isolation.
+        \vspace{0.1cm}\\
+        \textbf{Example}: \texttt{datacenter1: 3, datacenter2: 3} means 6 total replicas across 2 DCs. A failure of one entire DC still allows the other DC to serve all data.
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Multi-DC Write Path}]
+        \scriptsize
+        With \texttt{LOCAL\_QUORUM} consistency:
+        \begin{enumerate}
+          \item Client writes to any coordinator in DC1
+          \item Coordinator routes write to all RF replicas in DC1 (synchronously)
+          \item Coordinator acknowledges to client once local quorum is met
+          \item Replication to DC2 happens \textbf{asynchronously} via hints
+        \end{enumerate}
+        This achieves low-latency writes for the local DC while maintaining eventual consistency with the remote DC — ideal for active-active multi-region deployments.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[infobox, title=Hinted Handoff]
+        \scriptsize
+        If a replica node is temporarily unavailable, the coordinator stores a \textit{hint} (a buffer of the missed write). When the replica comes back online, the hint is replayed to bring it up to date.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Cassandra Storage Engine: The Write Path}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \small
+      \textbf{Step-by-step write path:}
+      \begin{enumerate}
+        \item \textbf{Commit Log} — write is appended to the per-node commit log (WAL) immediately. This is \textit{sequential I/O} on disk — extremely fast. Ensures durability across crashes.
+        \item \textbf{Memtable} — write is also written to an in-memory sorted structure (the Memtable). Reads on recently written data are served from here.
+        \item \textbf{SSTable flush} — when the Memtable exceeds a threshold, it is \textit{flushed} to disk as a new, immutable SSTable (Sorted String Table). Flush is also sequential.
+        \item \textbf{Bloom Filter} — each SSTable has a Bloom filter in memory; used to quickly determine if a key \textit{might} exist in that SSTable, avoiding unnecessary disk seeks.
+        \item \textbf{Compaction} — background process that merges and de-duplicates SSTables, removing tombstones and reclaiming disk space.
+      \end{enumerate}
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Tombstones}]
+        \scriptsize
+        Cassandra does \textbf{not} delete data in-place. Deletions write a special record called a \textit{tombstone} with a deletion timestamp. During compaction, rows whose tombstone timestamp exceeds \texttt{gc\_grace\_seconds} (default: 10 days) are actually removed.
+        \vspace{0.1cm}\\
+        \textbf{Why 10 days?} If a node was offline for 9 days and missed a delete, it must receive the tombstone via repair before the GC window expires. If the window expires first, the deleted data is resurrected (a ``zombie'' row).
+        \vspace{0.1cm}\\
+        \textbf{Implication}: designs that generate many tombstones (e.g., writing a ``null'' to update a cell) severely degrade read performance. Prefer \texttt{TTL} instead.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Cassandra Storage Engine: The Read Path}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \small
+      \textbf{Step-by-step read path:}
+      \begin{enumerate}
+        \item Check \textbf{Row Cache} (if enabled and configured)
+        \item Check \textbf{Memtable} — most recently written data served instantly
+        \item For each SSTable:
+        \begin{enumerate}\scriptsize
+          \item Check \textbf{Bloom filter} — skip SSTable if key definitely absent ($O(1)$)
+          \item Check \textbf{Partition Summary} — memory-resident sparse index of partition offsets
+          \item Consult \textbf{Partition Index} — on-disk structure for exact byte offset of key
+          \item Seek \textbf{SSTable data file} — read compressed, sorted data blocks
+        \end{enumerate}
+        \item \textbf{Merge} results from Memtable and all SSTables; use timestamp to determine winner (last-write-wins)
+        \item Apply \textbf{tombstones} to filter deleted rows
+      \end{enumerate}
+    \column{0.45\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Read Repair}]
+        \scriptsize
+        When consistency level requires reading from multiple replicas:
+        \begin{enumerate}
+          \item Coordinator sends read to all required replicas
+          \item Compares digest responses
+          \item If replicas disagree: fetches full data from all, picks latest timestamp, and \textit{writes the correct value back} to the stale replicas
+          \item Returns the correct value to the client
+        \end{enumerate}
+        This self-healing mechanism is called \textbf{Read Repair}. It runs in the foreground (blocking) at the configured probability, keeping replicas in sync without explicit repair jobs.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{alertblock}{Compaction Strategy}
+        \scriptsize \textbf{STCS} (default) — good for write-heavy; \textbf{LCS} — good for read-heavy (fewer SSTables); \textbf{TWCS} — ideal for time-series with TTL.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Tunable Consistency: The AP/CP Dial}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \small
+      \textbf{Consistency level governs how many replicas must respond:}
+      \vspace{0.2cm}
+      \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{>{\ttfamily\scriptsize}p{2.0cm} p{3.6cm}}
+          \toprule
+          \textbf{Level} & \textbf{Semantics} \\
+          \midrule
+          ONE & Only 1 replica must respond (fastest, least consistent) \\
+          TWO / THREE & 2 or 3 replicas must respond \\
+          QUORUM & Majority: $\lfloor RF/2 \rfloor + 1$ replicas \\
+          LOCAL\_QUORUM & Quorum within local DC only \\
+          EACH\_QUORUM & Quorum in \textit{each} DC \\
+          ALL & All replicas must respond (most consistent, least available) \\
+          \bottomrule
+        \end{tabular}
+      \end{center}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Strong Consistency Formula}]
+        \scriptsize
+        With RF replicas, to achieve strong (linearizable) consistency, you need:
+        \[R + W > RF\]
+        where $R$ = read CL replicas, $W$ = write CL replicas.
+        \vspace{0.1cm}\\
+        \textbf{Example} (RF=3):
+        \begin{itemize}
+          \item Write: QUORUM (2) + Read: QUORUM (2) = 4 $>$ 3 \checkmark \textit{Strong}
+          \item Write: ONE (1) + Read: ONE (1) = 2 $\not>$ 3 \texttimes \textit{Eventual}
+          \item Write: ALL (3) + Read: ONE (1) = 4 $>$ 3 \checkmark \textit{Strong (but low write availability)}
+        \end{itemize}
+        QUORUM + QUORUM is the typical production setting for most applications.
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[cassbox]
+        \scriptsize
+        \textbf{Key design freedom}: you can set consistency \textit{per query}. A banking query can use \texttt{QUORUM}; a metrics query can use \texttt{ONE}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Query-First Data Modeling: The Core Principle}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{alertblock}{Cassandra's Cardinal Rule}
+        \small Model your \textbf{tables around your queries}, not around your entities. Every query should be answerable by a single partition scan.
+      \end{alertblock}
+      \vspace{0.3cm}
+      \textbf{The modeling workflow:}
+      \begin{enumerate}\small
+        \item Enumerate all application queries (``What does the app need to read?'')
+        \item For each query: design a table whose partition key equals the query's primary filter
+        \item Choose clustering columns to sort data in the order the query needs
+        \item Accept data duplication as a \textit{feature}, not a bug
+        \item Define the write path: what tables must be updated on each write event?
+      \end{enumerate}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Why No JOINs?}]
+        \scriptsize
+        A JOIN in a distributed system requires:
+        \begin{enumerate}
+          \item Broadcast query to all nodes holding relevant partitions
+          \item Shuffle large data volumes across the network
+          \item Merge results centrally
+        \end{enumerate}
+        In a cluster with 100 nodes, this is a \textbf{fan-out of 100} network round-trips. Under high load, this becomes a distributed coordination nightmare.
+        \vspace{0.1cm}\\
+        \textbf{Cassandra's answer}: pre-compute the join at write time. Denormalize the data so each query only touches one partition. JOINs happen in the \textit{application}, at write time, not at read time.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}[fragile]{CQL: Keyspace \& Table Design}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Creating a Keyspace:}
+      \begin{lstlisting}[style=cql]
+CREATE KEYSPACE university
+  WITH REPLICATION = {
+    'class': 'NetworkTopologyStrategy',
+    'datacenter1': 3,
+    'datacenter2': 2
+  }
+  AND DURABLE_WRITES = true;
+
+USE university;
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \textbf{Query-Driven Table: ``Get all enrollments for a student'':}
+      \begin{lstlisting}[style=cql]
+CREATE TABLE enrollments_by_student (
+    student_id  uuid,
+    enrolled_at timestamp,
+    course_code text,
+    course_name text,
+    semester    text,
+    grade       float,
+    PRIMARY KEY ((student_id), enrolled_at)
+) WITH CLUSTERING ORDER BY (enrolled_at DESC);
+      \end{lstlisting}
+    \column{0.47\textwidth}
+      \textbf{Query-Driven Table: ``Get top students in a course'':}
+      \begin{lstlisting}[style=cql]
+-- Separate table for the reverse query
+CREATE TABLE students_by_course (
+    course_code text,
+    gpa         float,
+    student_id  uuid,
+    student_name text,
+    semester    text,
+    PRIMARY KEY ((course_code), gpa, student_id)
+) WITH CLUSTERING ORDER BY (gpa DESC);
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[cassbox, title={Two Tables, Two Queries}]
+        \scriptsize
+        Both tables store the same relationship data (student $\leftrightarrow$ course enrollment). This \textbf{denormalization} is intentional: each table is optimized for exactly one read query. Write operations update both tables atomically using a \texttt{BATCH} statement.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}[fragile]{CQL: Advanced Features}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{TTL (Time-To-Live) for automatic expiry:}
+      \begin{lstlisting}[style=cql]
+-- Session token expires in 3600 seconds
+INSERT INTO session_tokens
+  (user_id, token, created_at)
+VALUES (uuid(), 'abc123xyz', toTimestamp(now()))
+USING TTL 3600;
+
+-- Per-column TTL
+UPDATE user_preferences
+USING TTL 86400
+SET dark_mode = true
+WHERE user_id = 550e8400-e29b-41d4-a716-446655440000;
+      \end{lstlisting}
+      \vspace{0.2cm}
+      \textbf{Lightweight Transactions (Paxos):}
+      \begin{lstlisting}[style=cql]
+-- Conditional insert (compare-and-set)
+INSERT INTO accounts (id, email, balance)
+VALUES (uuid(), 'trinh@hcmut.edu.vn', 1000)
+IF NOT EXISTS;
+
+-- Conditional update
+UPDATE accounts SET balance = 900
+WHERE id = ?
+IF balance = 1000;
+      \end{lstlisting}
+    \column{0.47\textwidth}
+      \textbf{Collections (List, Set, Map):}
+      \begin{lstlisting}[style=cql]
+CREATE TABLE student_profile (
+    id       uuid PRIMARY KEY,
+    name     text,
+    tags     set<text>,
+    scores   list<float>,
+    metadata map<text, text>
+);
+
+-- Append to list
+UPDATE student_profile
+SET scores = scores + [3.8]
+WHERE id = ?;
+
+-- Add to set
+UPDATE student_profile
+SET tags = tags + {'honors', 'research'}
+WHERE id = ?;
+      \end{lstlisting}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: LWT Cost}]
+        \scriptsize
+        Lightweight Transactions use a \textbf{4-round-trip Paxos protocol} (Prepare → Promise → Propose → Commit). They are $4\times$--$8\times$ slower than regular writes. Use them only when you truly need conditional atomicity; avoid overuse.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}[fragile]{CQL: Time-Series Data Modeling}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \textbf{Sensor data model — classic time-series:}
+      \begin{lstlisting}[style=cql]
+CREATE TABLE iot_sensor_readings (
+    device_id  uuid,
+    -- Bucket by day to control partition size
+    day        date,
+    recorded_at timestamp,
+    temperature float,
+    humidity    float,
+    pressure    float,
+    PRIMARY KEY ((device_id, day), recorded_at)
+) WITH CLUSTERING ORDER BY (recorded_at DESC)
+  AND default_time_to_live = 2592000; -- 30 days TTL
+
+-- Querying the last hour for device ABC
+SELECT recorded_at, temperature, humidity
+FROM iot_sensor_readings
+WHERE device_id = ? AND day = '2024-06-15'
+  AND recorded_at > toTimestamp(now()) - 3600000;
+      \end{lstlisting}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Partition Size \& Bucketing}]
+        \scriptsize
+        \textbf{Problem}: a sensor emitting 10 readings/second for 1 year creates $\approx 315$ million cells in one partition — exceeding the recommended 100K cells/partition limit.
+        \vspace{0.1cm}\\
+        \textbf{Solution — Time Bucketing}: add a time component (\texttt{day}, \texttt{week}, or \texttt{month}) to the partition key. Each day's readings form a separate partition, keeping each partition at a manageable size ($\approx 864K$ cells/day for 10 Hz).
+        \vspace{0.1cm}\\
+        Queries spanning multiple days must issue one query per bucket and merge results in the application layer — a standard trade-off in Cassandra design.
+      \end{tcolorbox}
+      \begin{tcolorbox}[cassbox, title=TWCS Compaction]
+        \scriptsize
+        \textbf{TimeWindowCompactionStrategy} groups SSTables by time window and compacts only within the same window — perfectly aligned with time-bucketed TTL data. Avoids compacting expired data with live data.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Cassandra Use Cases \& Anti-Patterns}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[cassbox, title={[OK] Ideal Use Cases}]
+        \small
+        \begin{itemize}
+          \item \textbf{IoT sensor data} — time-bucketed, high-frequency writes from millions of devices with automatic TTL expiry
+          \item \textbf{Chat / messaging systems} — partition by room ID + cluster by timestamp; sequential reads serve chat history instantly
+          \item \textbf{User activity logs} — clickstreams, event logs, session tracking at massive scale
+          \item \textbf{Leaderboards} — partition by game/category, cluster by score (DESC)
+          \item \textbf{Inventory \& catalog} — wide rows accommodate product variant attributes without schema changes
+          \item \textbf{Multi-region active-active} — NetworkTopologyStrategy + LOCAL\_QUORUM enables true active-active with no single region as master
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={[!] Anti-Patterns}]
+        \small
+        \begin{itemize}
+          \item \textbf{Relationship-heavy queries} — ``find all users who purchased X and also rated Y above 4 stars'' requires scanning multiple partitions or application-side filtering
+          \item \textbf{Ad-hoc analytics} — unknown WHERE clause patterns require ALLOW FILTERING, which scans all partitions — catastrophically slow at scale
+          \item \textbf{Frequent updates to the same cell} — creates a chain of versions that slow down reads (compaction hasn't merged them yet)
+          \item \textbf{Many small partitions} — millions of single-row partitions defeat the purpose of the partition model; consider column-family restructuring
+          \item \textbf{Counting} — \texttt{SELECT COUNT(*)} is a full table scan; use \texttt{counter} columns or external counters (Redis) instead
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ==================================================================
+% SECTION 4: DEEP COMPARISON
+% ==================================================================
+\section{Deep Comparison}
+
+\begin{frame}{Architectural Comparison: At a Glance}
+  \scriptsize
+  \renewcommand{\arraystretch}{1.5}
+  \begin{tabular}{>{\bfseries}p{2.5cm} p{5.0cm} p{5.0cm}}
+    \toprule
+    \textbf{Dimension} & \textbf{\textcolor{neo4jGreen}{Neo4j}} & \textbf{\textcolor{cassBlue}{Apache Cassandra}} \\
+    \midrule
+    Category & Graph Database & Wide-Column Store \\
+    Origin & Sweden, 2007 & Facebook, 2007 (Apache 2009) \\
+    CAP position & CA / CP (Raft-based) & AP (tunable) \\
+    Consistency model & ACID, full transactions & BASE, eventual (tunable to strong) \\
+    Topology & Master-follower (Core + Read Replicas) & Masterless ring (peer-to-peer) \\
+    Data model & Nodes, Relationships, Properties & Partitions, Rows, Clustering Columns \\
+    Query language & Cypher (openCypher / GQL) & CQL (SQL-like) \\
+    Write pattern & Raft-committed, ACID & Append to Commit Log + Memtable \\
+    Read pattern & Index-free adjacency pointer chain & Bloom filter + Partition index + SSTable merge \\
+    Scalability axis & Scale-up (+ Fabric for sharding) & Linear scale-out (add nodes to ring) \\
+    Fault tolerance & Raft quorum (majority must survive) & RF copies; any node can serve any request \\
+    Schema flexibility & High (schema-optional labels \& props) & Moderate (per-table schema, strict partition key) \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Performance Characteristics: Write Path}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j Write Performance]
+        \small
+        \textbf{Strengths:}
+        \begin{itemize}\scriptsize
+          \item Transactional integrity — complex multi-node/multi-relationship writes in a single ACID transaction
+          \item Relationship creation is $O(1)$: append two relationship records and update two node pointers
+        \end{itemize}
+        \textbf{Bottlenecks:}
+        \begin{itemize}\scriptsize
+          \item Raft consensus adds latency: $\sim$5--50ms extra per write to achieve quorum
+          \item Pessimistic locking can cause contention on ``hot'' nodes (supernode problem)
+          \item Bulk loading of millions of nodes requires offline batch import tools (\texttt{neo4j-admin import}) rather than transactional Cypher
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra Write Performance]
+        \small
+        \textbf{Strengths:}
+        \begin{itemize}\scriptsize
+          \item Writes are \textbf{sequential I/O} to Commit Log + Memtable — extremely fast ($<$1ms latency at ONE)
+          \item No locking: last-write-wins via timestamp means concurrent writes never block
+          \item Linear throughput scaling: doubling nodes roughly doubles write capacity
+          \item Benchmark: single node can sustain \textbf{100,000+ writes/second}
+        \end{itemize}
+        \textbf{Bottlenecks:}
+        \begin{itemize}\scriptsize
+          \item Tombstone accumulation from frequent deletes/updates degrades read performance
+          \item Compaction I/O spikes can temporarily consume disk bandwidth
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Performance Characteristics: Read Path}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j Read Performance]
+        \small
+        \textbf{Strengths:}
+        \begin{itemize}\scriptsize
+          \item \textbf{Deep traversal} — 6-hop friendship query on a 1B node graph completes in milliseconds via pointer chasing
+          \item Traversal time is proportional to \textit{result size}, not graph size
+          \item In-memory page cache eliminates I/O for hot subgraphs
+          \item Cypher planner optimizes complex pattern queries automatically
+        \end{itemize}
+        \textbf{Bottlenecks:}
+        \begin{itemize}\scriptsize
+          \item Analytical queries over the full graph (e.g., global PageRank) are memory-intensive; GDS library manages in-memory projections
+          \item Read Replicas can lag behind Core by a configurable delta
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra Read Performance]
+        \small
+        \textbf{Strengths:}
+        \begin{itemize}\scriptsize
+          \item \textbf{Single partition reads} are extremely fast: Bloom filter eliminates most disk seeks; clustering columns pre-sort data for sequential reads
+          \item Time-series queries with LIMIT on a clustered partition are $O(1)$ — they read from the head of the sorted SSTable
+        \end{itemize}
+        \textbf{Bottlenecks:}
+        \begin{itemize}\scriptsize
+          \item \textbf{Multi-partition reads} — queries crossing partitions require coordinating multiple nodes; latency scales with partition count
+          \item \texttt{ALLOW FILTERING} causes a \textit{full table scan} — catastrophic at scale; always a design smell
+          \item Read amplification increases with SSTable count (mitigated by compaction)
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Scalability: Scale-Up vs.\ Scale-Out}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j: Vertical Scaling (Scale-Up)]
+        \small
+        \begin{itemize}
+          \item Core strength: adding RAM to fit more of the graph in the \textbf{page cache} provides near-linear read performance gains
+          \item Raft Core Servers must be \textit{identical in capability} — the weakest node determines consensus speed
+          \item Horizontal write scaling via \textbf{Fabric} sharding, but requires application-level query routing and increased operational complexity
+          \item Practical limit: a single Core Server can handle graphs of $\sim$\textbf{billions of nodes and relationships} if RAM is sufficient ($\sim$hundreds of GB)
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra: Linear Scale-Out]
+        \small
+        \begin{itemize}
+          \item Adding a node to the ring \textbf{automatically redistributes} token ranges; capacity scales nearly linearly
+          \item Both \textit{reads and writes} benefit from adding nodes — unlike primary/replica architectures where only reads scale
+          \item Netflix demonstrated linear scaling from 48 to 288 nodes with near-linear throughput increase
+          \item Operational simplicity: \texttt{nodetool bootstrap} / \texttt{decommission} handle node lifecycle without downtime
+        \end{itemize}
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[deepdivebox, title=Key Insight]
+        \scriptsize
+        If your bottleneck is \textbf{relationship traversal depth}: scale up Neo4j RAM. If your bottleneck is \textbf{write throughput or storage volume}: add Cassandra nodes.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Consistency \& Durability Trade-offs}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \small
+      \textbf{When strong consistency is non-negotiable:}
+      \begin{itemize}
+        \item Financial transactions (double-spend prevention)
+        \item Access control decisions (security policy changes must be immediately visible)
+        \item Inventory management (two users must not both think the last item is available)
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Neo4j} handles these naturally via full ACID transactions.
+      \vspace{0.2cm}
+      \textbf{Cassandra} can handle these via:
+      \begin{itemize}\scriptsize
+        \item \texttt{QUORUM + QUORUM} (strong consistency) — sacrifices some availability
+        \item \textbf{Lightweight Transactions} (Paxos) — full linearizability, but $4\times$ slower
+      \end{itemize}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Last-Write-Wins Conflicts}]
+        \scriptsize
+        Cassandra resolves concurrent writes using \textbf{timestamps}. The write with the higher timestamp wins. However:
+        \begin{itemize}
+          \item Clock skew across nodes (even with NTP) can cause the \textit{earlier} write to win if its node's clock is ahead
+          \item Solution: use \textbf{client-generated timestamps} and ensure monotonically increasing values
+          \item The \texttt{USING TIMESTAMP} clause allows explicit control
+        \end{itemize}
+        \vspace{0.1cm}
+        For true conflict-free data structures, Cassandra 4.0+ introduced \textbf{CRDT-based counters}, but general-purpose CRDTs require application design.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Operational Complexity Comparison}
+  \scriptsize
+  \renewcommand{\arraystretch}{1.5}
+  \begin{tabular}{>{\bfseries}p{2.8cm} p{4.5cm} p{4.5cm}}
+    \toprule
+    \textbf{Operation} & \textbf{\textcolor{neo4jGreen}{Neo4j}} & \textbf{\textcolor{cassBlue}{Cassandra}} \\
+    \midrule
+    Initial setup & Simple single-instance; Causal Clustering adds complexity & Requires cluster planning (RF, DC layout, vnodes) upfront \\
+    Schema changes & Add labels/properties without downtime; index creation is online & \texttt{ALTER TABLE} is instant (metadata only); data backfill is separate \\
+    Backup & Online backup via \texttt{neo4j-admin backup}; consistent snapshot & Snapshots per-node via \texttt{nodetool snapshot}; coordination needed \\
+    Monitoring & Built-in metrics endpoint, Prometheus integration, Neo4j Ops Manager & \texttt{nodetool} CLI, JMX metrics, DataStax Metrics Collector \\
+    Upgrades & Rolling upgrade supported (Core + Read Replica) & Rolling upgrade: drain, upgrade, restart node-by-node; fully online \\
+    Repair & Not required (Raft ensures consistency) & \texttt{nodetool repair} must run periodically to reconcile replicas \\
+    Tuning levers & Page cache size, heap, query plan hints & Compaction strategy, memtable size, CL per query, GC grace \\
+    Cloud-managed & AuraDB (fully managed, Neo4j Inc.) & Astra DB (DataStax), Amazon Keyspaces (AWS) \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Developer Experience Comparison}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j Developer Experience]
+        \small
+        \begin{itemize}
+          \item \textbf{Neo4j Browser / Bloom} — visual graph explorer; great for understanding data relationships intuitively
+          \item \textbf{Cypher readability} — ``I want users who bought X and rated Y'' translates almost directly into a readable Cypher pattern
+          \item \textbf{Schema flexibility} — add properties and labels to nodes without migration scripts
+          \item \textbf{Driver ecosystem} — official drivers for Python, Java, JavaScript, Go, .NET; community drivers for many others
+          \item \textbf{GraphQL integration} — Neo4j GraphQL Library auto-generates schema from graph model
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra Developer Experience]
+        \small
+        \begin{itemize}
+          \item \textbf{CQL familiarity} — SQL-like syntax lowers onboarding barrier for developers with SQL background
+          \item \textbf{Strict modeling discipline} — query-first design requires upfront query enumeration; changing queries later may require new tables
+          \item \textbf{Driver ecosystem} — DataStax Java Driver, Python Driver, Node.js Driver; all support async, connection pooling, speculative execution
+          \item \textbf{Cassandra Workload Analyzer} — tool for identifying anti-patterns in CQL queries
+          \item \textbf{Spring Data Cassandra} — Spring Boot integration for rapid application development
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Security Features Comparison}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j Security]
+        \small
+        \begin{itemize}
+          \item \textbf{Authentication}: native username/password, LDAP, SSO (OIDC)
+          \item \textbf{Authorization}: role-based access control (RBAC) with fine-grained privileges at database, graph, and property levels
+          \item \textbf{Property-level security} (Enterprise): hide specific node/relationship properties from users without sufficient privilege
+          \item \textbf{Subgraph-level security}: restrict which nodes/relationships a role can see
+          \item \textbf{Encryption}: TLS for bolt/HTTP protocols; data-at-rest encryption via OS/storage layer
+          \item \textbf{Audit logging}: full query audit log for compliance (GDPR, HIPAA)
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.48\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra Security]
+        \small
+        \begin{itemize}
+          \item \textbf{Authentication}: internal (CassandraAutenticator) or LDAP via DSE
+          \item \textbf{Authorization}: object-level permissions (keyspace, table, function) via \texttt{GRANT/REVOKE}
+          \item \textbf{SSL/TLS}: node-to-node and client-to-node encryption configurable independently
+          \item \textbf{Transparent Data Encryption (TDE)}: DSE Enterprise; encrypts SSTable files on disk
+          \item \textbf{Audit logging}: introduced in Cassandra 4.0; logs CQL operations per-keyspace
+          \item \textbf{Network}: firewall rules recommended; no native row-level security without DSE
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Ecosystem \& Integrations}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j Ecosystem]
+        \scriptsize
+        \begin{itemize}
+          \item \textbf{GDS Library}: 65+ graph algorithms (centrality, community, pathfinding, ML embeddings)
+          \item \textbf{APOC}: 450+ utility procedures
+          \item \textbf{GraphQL API}: auto-generated from graph schema
+          \item \textbf{Data connectors}: Kafka, Spark (GraphFrames), Elasticsearch
+          \item \textbf{ETL tools}: Neo4j ETL tool for RDBMS migration; Data Importer (GUI)
+          \item \textbf{Visualization}: Neo4j Bloom, yFiles, Graphistry (GPU-accelerated)
+          \item \textbf{LLM integration}: LangChain Neo4j integration; Knowledge Graph + RAG patterns
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra Ecosystem]
+        \scriptsize
+        \begin{itemize}
+          \item \textbf{Apache Spark (Cassandra Connector)}: run Spark analytics directly over Cassandra data
+          \item \textbf{Apache Kafka (Kafka Connect)}: stream events into Cassandra at low latency
+          \item \textbf{Presto/Trino}: SQL analytics layer over Cassandra for ad-hoc queries
+          \item \textbf{Elasticsearch}: common pattern — Cassandra for primary store, ES for full-text search
+          \item \textbf{Stargate}: API gateway providing REST, GraphQL, and Document APIs over Cassandra
+          \item \textbf{Pulsar}: Apache Pulsar native Cassandra sink/source connector
+          \item \textbf{Flink}: streaming analytics with Cassandra state store
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ==================================================================
+% SECTION 5: POLYGLOT PERSISTENCE
+% ==================================================================
+\section{Polyglot Persistence}
+
+\begin{frame}{Polyglot Persistence: The Modern Architecture Paradigm}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \small
+      \textbf{Definition:}
+      \begin{quote}
+        \textit{Polyglot persistence} is the practice of using different data storage technologies within a single application to match each component's specific access patterns and data shape requirements.
+      \end{quote}
+      \vspace{0.2cm}
+      \textbf{Origin:} Coined by Martin Fowler and Pramod Sadalage in \textit{NoSQL Distilled} (2012).
+      \vspace{0.3cm}
+
+      \textbf{Core principle:} Abandon the idea of a single ``one-size-fits-all'' database. Instead:
+      \begin{itemize}\small
+        \item Identify the nature of each data domain
+        \item Select the storage engine optimized for that domain's access pattern
+        \item Accept operational overhead of managing multiple systems in exchange for each system performing at its theoretical optimum
+      \end{itemize}
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[infobox, title=Common Polyglot Stack]
+        \scriptsize
+        \begin{tabular}{@{}ll@{}}
+          \textbf{Relational} & Core transactions (orders) \\
+          \textbf{Redis} & Sessions, caching, pub/sub \\
+          \textbf{Elasticsearch} & Full-text search \\
+          \textbf{Neo4j} & Recommendation, fraud \\
+          \textbf{Cassandra} & Events, logs, timeseries \\
+          \textbf{S3 / Blob} & Binary assets \\
+        \end{tabular}
+      \end{tcolorbox}
+      \vspace{0.2cm}
+      \begin{alertblock}{Trade-off}
+        \small Polyglot persistence increases \textbf{data consistency complexity} (cross-store transactions are not atomic) and \textbf{operational burden} (more systems to monitor and maintain). Microservices architectures absorb this naturally via service boundaries.
+      \end{alertblock}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Combining Neo4j and Cassandra: Architecture Patterns}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \small
+      \textbf{Pattern 1: Event Sourcing + Graph Projection}
+      \begin{itemize}\scriptsize
+        \item All user events (clicks, purchases, ratings) are written to \textbf{Cassandra} as immutable event log (partition by user\_id, cluster by event\_time)
+        \item An asynchronous consumer reads the Cassandra changelog and projects relevant relationship events into \textbf{Neo4j} (e.g., ``User A purchased Product B'' → creates \texttt{[:PURCHASED]} edge)
+        \item Neo4j serves real-time graph traversal queries (recommendations, fraud detection) over the projected graph
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Pattern 2: Write to Both, Query from Right}
+      \begin{itemize}\scriptsize
+        \item Application writes to both stores in the same business transaction (eventually consistent across stores)
+        \item Relationship queries → Neo4j; timeseries/bulk queries → Cassandra
+        \item A Kafka topic acts as the bridge; consumers update each store independently
+      \end{itemize}
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Deep Dive: Data Consistency Risk}]
+        \scriptsize
+        Writing to two databases in the same business operation creates a \textbf{distributed transaction problem}. If the Cassandra write succeeds but the Neo4j write fails:
+        \begin{itemize}
+          \item The event log is correct (Cassandra)
+          \item But the recommendation graph is missing an edge (Neo4j)
+        \end{itemize}
+        \textbf{Mitigation strategies:}
+        \begin{enumerate}
+          \item \textbf{Outbox pattern}: write to Cassandra first; publish event to Kafka; Neo4j consumer processes at-least-once
+          \item \textbf{Saga pattern}: implement compensating transactions for rollback
+          \item \textbf{Eventual consistency SLA}: accept a brief window where Neo4j lags Cassandra
+        \end{enumerate}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Case Study: University Social Platform Architecture}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \small
+      \textbf{``BK Connect'' — a university social network:}
+      \vspace{0.2cm}
+
+      \textbf{Service 1: Recommendation Engine (Neo4j)}
+      \begin{itemize}\scriptsize
+        \item Data: Student nodes, Course nodes, Faculty nodes
+        \item Relationships: \texttt{[:ENROLLED\_IN]}, \texttt{[:FRIEND]}, \texttt{[:STUDIES\_WITH]}, \texttt{[:SHARES\_FACULTY]}
+        \item Queries: ``Who should I connect with?'', ``What courses are popular in my network?''
+        \item Latency requirement: $<$50ms for 3-hop traversals
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Service 2: Messaging Service (Cassandra)}
+      \begin{itemize}\scriptsize
+        \item Table: \texttt{messages\_by\_room} (partition: room\_id, cluster: sent\_at DESC)
+        \item Write pattern: 10,000+ messages/second during exam periods
+        \item Query: ``Get last 50 messages in room X'' — answered by a single partition sequential read
+        \item HA: RF=3 across two datacenters; LOCAL\_QUORUM guarantees zero downtime during a full DC failure
+      \end{itemize}
+    \column{0.42\textwidth}
+      \textbf{Service 3: Activity Feed (Cassandra)}
+      \begin{itemize}\scriptsize
+        \item Denormalized per-user timeline table
+        \item On each social action (post, like, comment), the event is fanned out to followers' timelines in Cassandra
+        \item Partition: (user\_id, week\_bucket); Cluster: activity\_at DESC
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Service 4: User Profiles (PostgreSQL)}
+      \begin{itemize}\scriptsize
+        \item Core identity data with full ACID — Neo4j and Cassandra reference user\_id as a foreign key concept
+      \end{itemize}
+      \vspace{0.2cm}
+      \begin{tcolorbox}[infobox, title=Integration Fabric]
+        \scriptsize
+        \textbf{Apache Kafka} bridges all services: profile updates propagate to Neo4j and Cassandra via event streams; no service directly writes to another service's database.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Decision Framework: Choosing the Right Database}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \small
+      \textbf{Choose Neo4j when:}
+      \begin{itemize}\scriptsize
+        \item Your primary questions are about \textit{relationships} (``how are X and Y connected?'', ``what is the shortest path?'')
+        \item The graph structure is unknown at schema design time (exploratory graph analytics)
+        \item You need ACID transactions over multi-entity graph operations
+        \item Traversal depth matters more than raw throughput
+        \item The domain is naturally graph-shaped: social networks, knowledge graphs, dependency trees, org hierarchies
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Choose Cassandra when:}
+      \begin{itemize}\scriptsize
+        \item Write throughput is the primary concern ($>$10K writes/second)
+        \item Data access patterns are known and stable
+        \item Downtime is unacceptable (global 24/7 availability)
+        \item Data volumes require linear horizontal scaling to petabytes
+        \item Time-series, events, or log-style data is the primary payload
+      \end{itemize}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[infobox, title=Decision Checklist]
+        \scriptsize
+        \begin{tabular}{@{}lcc@{}}
+          & \textbf{Neo4j} & \textbf{Cassandra} \\
+          \midrule
+          Relationship queries? & \checkmark\checkmark & \texttimes \\
+          High write throughput? & \texttimes & \checkmark\checkmark \\
+          ACID transactions needed? & \checkmark\checkmark & (\checkmark) \\
+          Graph traversal queries? & \checkmark\checkmark & \texttimes \\
+          Time-series data? & \texttimes & \checkmark\checkmark \\
+          Flexible queries? & \checkmark\checkmark & \texttimes \\
+          Linear scale-out? & \texttimes & \checkmark\checkmark \\
+          Multi-DC active-active? & (\checkmark) & \checkmark\checkmark \\
+          Schema flexibility? & \checkmark\checkmark & \checkmark \\
+          Known access patterns? & \checkmark & \checkmark\checkmark \\
+        \end{tabular}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ==================================================================
+% SECTION 6: EMERGING TRENDS
+% ==================================================================
+\section{Emerging Trends \& Research Directions}
+
+\begin{frame}{Emerging Trends in Graph Databases}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Graph + AI / LLMs]
+        \small
+        \begin{itemize}
+          \item \textbf{Knowledge Graph + RAG (Retrieval-Augmented Generation)}: LLMs are augmented by Neo4j knowledge graphs that provide structured, relationship-aware context — reducing hallucinations
+          \item \textbf{GraphRAG} (Microsoft Research, 2024): community detection on knowledge graphs provides hierarchical document summaries for LLM context
+          \item \textbf{Graph Neural Networks}: Neo4j GDS provides GraphSAGE and FastRP embeddings that can be used as input features for ML classifiers
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=GQL: The ISO Graph Query Standard]
+        \small
+        \begin{itemize}
+          \item \textbf{GQL (ISO/IEC 39075)} was ratified in April 2024 — the first international standard for property graph query languages
+          \item Heavily influenced by Cypher (openCypher), SQL/PGQ (SQL:2023), and PGQL
+          \item Neo4j 5.x roadmap includes GQL compliance
+          \item Signals a maturation of the graph database ecosystem comparable to what SQL did for relational databases in the 1980s
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Emerging Trends in Wide-Column Stores}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra 5.0: Storage-Attached Indexing (SAI)]
+        \small
+        \begin{itemize}
+          \item SAI (Storage-Attached Indexing) replaces the legacy SASI and secondary indexes with a new architecture that co-locates index data with SSTable files
+          \item Enables efficient \textbf{non-partition-key filtering} — previously the Achilles heel of Cassandra data modeling
+          \item Supports vector search (Ann indexes) — enabling Cassandra to serve as a \textbf{vector database} alongside its traditional workloads
+          \item Opens Cassandra to similarity search for ML feature stores and embedding retrieval
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[cassbox, title=Cassandra \& the Serverless Future]
+        \small
+        \begin{itemize}
+          \item \textbf{DataStax Astra DB}: fully managed Cassandra with serverless billing (per-request, not per-node) — removes the operational burden of ring management
+          \item \textbf{Amazon Keyspaces}: Cassandra-compatible managed service on AWS; separates compute and storage (S3-based)
+          \item These serverless models decouple Cassandra's scalability benefits from its operational complexity — making it accessible to teams without dedicated DBA expertise
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Research Frontiers: Graph Computing at Scale}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+      \small
+      \textbf{Open research problems:}
+      \begin{itemize}
+        \item \textbf{Distributed graph traversal}: efficiently traversing graphs partitioned across hundreds of nodes without expensive cross-partition hops (the ``edge-cut'' problem)
+        \item \textbf{Dynamic graph algorithms}: maintaining PageRank, community detection results incrementally as edges are added/removed — without recomputing from scratch
+        \item \textbf{Temporal graphs}: efficiently querying ``what did the graph look like at time T?'' — requires bitemporal graph models
+        \item \textbf{Heterogeneous graph learning}: Graph Neural Networks that handle multiple node/edge types (as in property graphs) without collapsing to a homogeneous representation
+        \item \textbf{Privacy-preserving graph analytics}: federated graph learning across organizations without sharing raw graph topology
+      \end{itemize}
+    \column{0.45\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={Research Context: GNN on Property Graphs}]
+        \scriptsize
+        Traditional GNNs (GraphSAGE, GCN) assume homogeneous graphs (one node type, one edge type). Real-world property graphs like Neo4j instances are \textbf{heterogeneous}: a node can be \texttt{:Student}, \texttt{:Course}, or \texttt{:Faculty}; an edge can be \texttt{[:ENROLLED\_IN]} or \texttt{[:FRIEND]}.
+        \vspace{0.1cm}\\
+        \textbf{Heterogeneous GNNs} (HAN, HGT, R-GCN) handle multiple types but require graph-type-specific aggregation functions. Active research area with significant implications for fraud detection and biomedical knowledge graphs.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ==================================================================
+% SECTION 7: SUMMARY
+% ==================================================================
+\section{Summary \& Conclusions}
+
+\begin{frame}{Best Practices: Neo4j}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[neo4jbox, title={[OK] Do}]
+        \small
+        \begin{itemize}
+          \item \textbf{Model the domain as-is}: let entities become nodes and business relationships become typed edges with properties
+          \item \textbf{Use indexes at entry points}: always index the properties you use in the first \texttt{MATCH} clause
+          \item \textbf{Leverage MERGE for idempotent loading}: prevents duplicate data during re-imports
+          \item \textbf{Size the page cache first}: aim to hold the full node and relationship stores in RAM for best traversal performance
+          \item \textbf{Use \texttt{PROFILE}}: always inspect the query plan for unexpected NodeByLabelScan operations
+          \item \textbf{Batch large writes}: use \texttt{CALL \{\} IN TRANSACTIONS} for bulk operations to avoid single giant transactions that lock the graph
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={[!] Don't}]
+        \small
+        \begin{itemize}
+          \item \textbf{Don't use Neo4j as a logging store}: it is not designed for sequential, flat data ingestion; every write creates relationship pointers — expensive at billions of events
+          \item \textbf{Don't create supernodes carelessly}: a node with millions of relationships degrades traversal. Partition relationships by type, date, or status
+          \item \textbf{Don't skip relationship types}: an untyped \texttt{-[r]->} relationship loses semantic value and forces runtime filtering
+          \item \textbf{Don't ignore the Raft quorum requirement}: in a 3-node cluster, 2 nodes must be healthy for writes. Plan accordingly for maintenance windows
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Best Practices: Cassandra}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[cassbox, title={[OK] Do}]
+        \small
+        \begin{itemize}
+          \item \textbf{Design tables for queries}: list all read queries first; design one table per query pattern
+          \item \textbf{Choose partition keys that distribute evenly}: avoid partition keys that concentrate data on a few nodes (``hot spots'')
+          \item \textbf{Use TTL for ephemeral data}: let Cassandra automatically expire sessions, caches, and rate-limit counters rather than writing explicit deletes (which become tombstones)
+          \item \textbf{Run \texttt{nodetool repair} regularly}: keeps replicas in sync; frequency depends on \texttt{gc\_grace\_seconds} setting
+          \item \textbf{Use \texttt{LOCAL\_QUORUM} for multi-DC}: balances strong consistency within a DC with low cross-DC latency
+        \end{itemize}
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[deepdivebox, title={[!] Don't}]
+        \small
+        \begin{itemize}
+          \item \textbf{Don't use \texttt{ALLOW FILTERING} in production}: it triggers a full table scan that bypasses all partitioning logic — catastrophic at scale
+          \item \textbf{Don't generate excessive tombstones}: frequent overwrites of nullable columns create read-amplifying tombstone chains; prefer \texttt{TTL} over explicit deletes
+          \item \textbf{Don't ignore partition size}: aim for partitions between 1MB and 100MB. Very large partitions cause GC pressure and compaction stalls
+          \item \textbf{Don't rely on \texttt{SELECT COUNT(*)}}: full-table count is a distributed scan; use approximate counters or counter tables instead
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Summary: Core Takeaways}
+  \begin{columns}[T]
+    \column{0.50\textwidth}
+      \begin{tcolorbox}[neo4jbox, title=Neo4j in One Paragraph]
+        \small
+        Neo4j is the tool you reach for when \textbf{relationships are the data}. Its property graph model and index-free adjacency make multi-hop traversals practically instant, independent of total graph size. Full ACID transactions ensure graph integrity. Cypher's ASCII-art syntax makes complex relationship queries readable. The cost: write throughput and horizontal scalability are more constrained than purpose-built distributed stores.
+      \end{tcolorbox}
+      \vspace{0.3cm}
+      \begin{tcolorbox}[cassbox, title=Cassandra in One Paragraph]
+        \small
+        Cassandra is the tool you reach for when \textbf{volume, velocity, and uptime are non-negotiable}. Its masterless ring, tunable consistency, and append-only write path deliver linear scalability and zero single points of failure. The cost: you must model your tables around known query patterns, accept denormalization, and abandon joins.
+      \end{tcolorbox}
+    \column{0.47\textwidth}
+      \begin{tcolorbox}[infobox, title=The Design Philosophy Difference]
+        \normalsize
+        \begin{center}
+          \textbf{Neo4j:}\\
+          \textit{``Model the reality\\of your domain.''}
+        \end{center}
+        \vspace{0.3cm}
+        \begin{center}
+          \textbf{Cassandra:}\\
+          \textit{``Model the queries\\your application needs.''}
+        \end{center}
+        \vspace{0.3cm}
+        \hrule
+        \vspace{0.3cm}
+        Both are correct philosophies — for \textit{different} classes of problems. Wisdom is knowing which class your problem belongs to.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Conclusion: The Bigger Picture}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+      \small
+      \textbf{What this course should leave you with:}
+      \begin{itemize}
+        \item There is \textbf{no universally best database}. Every system makes trade-offs that make it optimal for some workloads and terrible for others.
+        \item The CAP theorem, ACID vs.\ BASE, and the relational vs.\ NoSQL divide are not just academic distinctions — they are \textbf{engineering decisions with real production consequences}.
+        \item \textbf{Polyglot persistence} is the pragmatic synthesis: combine Neo4j's graph intelligence with Cassandra's distributed power, bridged by event streaming, to build systems greater than the sum of their parts.
+        \item The emerging intersection of \textbf{graph databases + LLMs} (GraphRAG, Knowledge Graphs) is a significant research and industry frontier — highly relevant if you are pursuing graduate research in AI or distributed systems.
+        \item Always \textbf{benchmark with your actual workload}. Theoretical characteristics are starting points; production performance is empirical.
+      \end{itemize}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[infobox, title=Further Reading]
+        \scriptsize
+        \begin{itemize}
+          \item \textit{Graph Databases}, Robinson, Webber \& Eifrem (O'Reilly)
+          \item \textit{NoSQL Distilled}, Fowler \& Sadalage (Addison-Wesley)
+          \item \textit{Cassandra: The Definitive Guide}, Carpenter \& Hewitt (O'Reilly)
+          \item Brewer (2000): ``Towards Robust Distributed Systems'' (CAP theorem)
+          \item Abadi (2012): ``Consistency Tradeoffs in Modern Distributed Databases'' (PACELC)
+          \item Edge et al.\ (2024): ``GraphRAG: Unlocking LLM Discovery on Narrative Private Data'' (Microsoft)
+          \item ISO/IEC 39075:2024 (GQL Standard)
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{}
+  \begin{center}
+    \vspace{1.5cm}
+    {\Huge \textbf{Thank You}}\\[0.5cm]
+    {\large Questions \& Discussion}\\[1.0cm]
+    \hrule
+    \vspace{0.5cm}
+    \begin{columns}[c]
+      \column{0.45\textwidth}
+        \begin{tcolorbox}[neo4jbox]
+          \centering\small
+          \textbf{Neo4j}\\
+          \textit{``If your data is a graph,\\model it as a graph.''}
+        \end{tcolorbox}
+      \column{0.45\textwidth}
+        \begin{tcolorbox}[cassbox]
+          \centering\small
+          \textbf{Cassandra}\\
+          \textit{``Scale without\\compromise on uptime.''}
+        \end{tcolorbox}
+    \end{columns}
+    \vspace{0.5cm}
+    {\small L\^{a}m Kh\'{a}nh Tr\`{i}nh $\cdot$ HCMUT $\cdot$ \texttt{CO3021 — Database Systems}}
+  \end{center}
+\end{frame}
+
+\end{document}
