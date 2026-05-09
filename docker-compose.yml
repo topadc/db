@@ -1,0 +1,34 @@
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: choom-neo4j
+    ports:
+      - "7474:7474"   # Neo4j Browser
+      - "7687:7687"   # Bolt (driver)
+    environment:
+      NEO4J_AUTH: neo4j/choom-password
+    volumes:
+      - neo4j_data:/data
+
+  cassandra:
+    image: cassandra:5.0
+    container_name: choom-cassandra
+    ports:
+      - "9042:9042"   # CQL native transport
+    environment:
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+      CASSANDRA_CLUSTER_NAME: choom-cluster
+      CASSANDRA_DC: datacenter1
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -E '^UN'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+
+volumes:
+  neo4j_data:
+  cassandra_data:
